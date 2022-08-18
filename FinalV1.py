@@ -1,4 +1,3 @@
-from lib2to3.pgen2.parse import ParseError
 import logging
 import argparse
 import requests
@@ -90,21 +89,20 @@ def userPresentation(data: dict):
         out.append(f"{'='*8}")
     return out
 
-argparser = argparse.ArgumentParser(description='RSS reader')
-version = '0.1'
-argparser.version = ('{} version: {}').format(argparser.description, version)
-argparser.add_argument('source', metavar='[RSS URL]', type=str,
-                        help='url of rss feed')
-argparser.add_argument('-l', '--limit', metavar='LIMIT', action='store', type=int,
-                        help='limits output number of articles from feed')
-argparser.add_argument('-v', '--version', action='version', 
-                        help='Print version info')
-argparser.add_argument('-j', '--json', action='store_true', 
-                        help='Print result as JSON in stdout')
-argparser.add_argument('--verbose', action='store_true', 
-                        help='Outputs verbose status messages')
-
-if __name__ == '__main__':
+def main():
+    argparser = argparse.ArgumentParser(description='RSS reader')
+    version = '0.1'
+    argparser.version = ('{} version: {}').format(argparser.description, version)
+    argparser.add_argument('source', metavar='[RSS URL]', type=str,
+                            help='url of rss feed')
+    argparser.add_argument('-l', '--limit', metavar='LIMIT', action='store', type=int,
+                            help='limits output number of articles from feed')
+    argparser.add_argument('-v', '--version', action='version', 
+                            help='Print version info')
+    argparser.add_argument('-j', '--json', action='store_true', 
+                            help='Print result as JSON in stdout')
+    argparser.add_argument('--verbose', action='store_true', 
+                            help='Outputs verbose status messages')
     args = argparser.parse_args()
     if args.verbose: 
         logging.basicConfig(level=logging.DEBUG)
@@ -115,3 +113,6 @@ if __name__ == '__main__':
             data = parseRSS(text, args.limit)
             if args.json: print(jsonPresentation(data))
             else: print(''.join(userPresentation(data)))
+
+if __name__ == '__main__':
+    main()

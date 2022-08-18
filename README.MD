@@ -42,3 +42,29 @@ clone repo
 ```bash
 python FinalV1-test.py
 ```
+# Iteration 2:
+## building
+```bash
+#build
+python3 -m pip install --upgrade build
+python3 -m build
+#upload
+python3 -m pip install --upgrade twine
+python3 -m twine upload --repository testpypi dist/*
+```
+## installing
+```bash
+python3 -m venv rssreadertest #ensure clean and isolated python environemnt, you dont want THIS in your system
+cd rssreadertest
+python3 -m pip install --index-url https://test.pypi.org/simple/ rssreader-arthur
+```
+
+## running
+```
+python lib/python3.10/site-packages/rssreader_arthur/rssreader.py
+```
+or as script provided by pip
+```
+rss-reader -v
+#RSS reader version: 0.1
+```
