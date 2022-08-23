@@ -1,14 +1,6 @@
-* In case of any mistakes utility should print human-readable.
-error explanation. Exception tracebacks in stdout are prohibited in final version of application.
-* Code must correspond to `pep8` (use `pycodestyle` utility for self-check).
-  * You can set line length up to 120 symbols.
-* Commit messages should provide correct and helpful information about changes in commit. Messages like `Fix bug`, 
-`Tried to make workable`, `Temp commit` and `Finally works` are prohibited.
-
-
 # Iteration 1:
 # installation
-clone repo   
+#git clone repo   
 ```pip install -r requirements.txt```
 # usage
 ## get feed
@@ -41,30 +33,4 @@ clone repo
 ## unit testing Iteration 1
 ```bash
 python FinalV1-test.py
-```
-# Iteration 2:
-## building
-```bash
-#build
-python3 -m pip install --upgrade build
-python3 -m build
-#upload
-python3 -m pip install --upgrade twine
-python3 -m twine upload --repository testpypi dist/*
-```
-## installing
-```bash
-python3 -m venv rssreadertest #ensure clean and isolated python environemnt, you dont want THIS in your system
-cd rssreadertest
-python3 -m pip install --index-url https://test.pypi.org/simple/ rssreader-arthur
-```
-
-## running
-```
-python lib/python3.10/site-packages/rssreader_arthur/rssreader.py
-```
-or as script provided by pip
-```
-rss-reader -v
-#RSS reader version: 0.1
 ```
