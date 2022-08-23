@@ -1,11 +1,3 @@
-* In case of any mistakes utility should print human-readable.
-error explanation. Exception tracebacks in stdout are prohibited in final version of application.
-* Code must correspond to `pep8` (use `pycodestyle` utility for self-check).
-  * You can set line length up to 120 symbols.
-* Commit messages should provide correct and helpful information about changes in commit. Messages like `Fix bug`, 
-`Tried to make workable`, `Temp commit` and `Finally works` are prohibited.
-
-
 # Iteration 1:
 # installation
 clone repo   
