@@ -68,3 +68,8 @@ or as script provided by pip
 rss-reader -v
 #RSS reader version: 0.1
 ```
+# Iteration 3:
+Script will cache feed when --date argument in format %Y%m%d is passed
+```bash
+python3 FinalV1.py http://feeds.rssboard.org/rssboard --date 2014/04/02
+```

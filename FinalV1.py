@@ -1,25 +1,30 @@
+from cmath import log
 import logging
 import argparse
 import requests
 import xml.etree.ElementTree as ET
 import json
+import datetime
+import re
 
-def checkIfRss(responce):
+
+def check_if_rss(responce):
     ''' Checks if feeded data contains valid rss tags '''
     try:
         tree = ET.ElementTree(ET.fromstring(responce))
         root = tree.getroot()
-        if root.tag == 'rss': 
+        if root.tag == 'rss':
             logging.info('Valid RSS')
             return True
-        else: 
+        else:
             logging.error('Maybe XML, Invalid RSS')
             return False
     except ET.ParseError as err:
         logging.critical(f'RSS parsing error: {err}, source not valid rss')
         return False
 
-def httpGetFeed(url: str):
+
+def http_get_feed(url: str):
     ''' Makes http request to specified url to get rss feed'''
     try:
         responce = requests.get(url)
@@ -37,82 +42,207 @@ def httpGetFeed(url: str):
     responce.encoding = 'utf-8'
     return responce.text
 
-def parseRSS(xmlstring: str, limit: int = 0):
-    ''' Parses xml structure to build python dictionary containing channels, channel topics (news), and all metainformation'''
+
+def parse_rss(xmlstring: str, limit: int = 0):
+    ''' Parses xml structure to build python dictionary containing channels,
+    channel topics (news), and all metainformation'''
     chaninfo = {}
     tree = ET.ElementTree(ET.fromstring(xmlstring))
     root = tree.getroot()
     channumber = 0
     for channel in root.iter('channel'):
-        logging.info(f"Iterating on channel: {channumber} [{channel.find('link').text}]")
-        chaninfo[channumber] = {'title': channel.find('title').text,
-                    'description': channel.find('description').text,
-                    'language':channel.find('language').text,
-                    'link':channel.find('link').text}
-        itemcounter = 0 
+        logging.info(f"Iterating on channel: {channumber} \
+                    [{channel.find('link').text}]")
+        chaninfo[channumber] = {'title': channel
+                                .find('title').text,
+                                'description': channel
+                                .find('description').text,
+                                'language': channel
+                                .find('language').text,
+                                'link': channel
+                                .find('link').text}
+        itemcounter = 0
         itemlist = []
         for item in channel.iter('item'):
-            if not limit: itemcounter = 0; itemlimit = 1 # don't limit items if limit not set 
-            else: itemlimit = limit
+            if not limit:
+                itemcounter = 0
+                itemlimit = 1  # don't limit items if limit not set
+            else:
+                itemlimit = limit
             if itemcounter < itemlimit:
-                logging.info(f"Iterating on channel item: {itemcounter} [{item.find('link').text}]")
+                logging.info(f"Iterating on channel item: {itemcounter} \
+                    [{item.find('link').text}]")
                 itemlist.append({
-                'title':item.find('title').text,
-                'link':item.find('link').text,
-                'description':item.find('description').text,
-                'pubDate':item.find('pubDate').text})
+                    'title': item.find('title').text,
+                    'link': item.find('link').text,
+                    'description': item.find('description').text,
+                    'pubDate': item.find('pubDate').text})
                 chaninfo[channumber]['items'] = itemlist
                 itemcounter += 1
-            else: pass
+            else:
+                pass
         channumber += 1
     return chaninfo
 
-def jsonPresentation(data: dict):
-    '''In case of using `--json` argument your utility should convert the news into [JSON]format.'''
+
+def json_presentation(data: dict):
+    '''In case of using `--json` argument
+    your utility should convert the news into [JSON]format.'''
     # print('json')
     return json.dumps(data)
 
-def userPresentation(data: dict):
+
+def user_presentation(data: dict):
     ''' Composes data as human readable cli output '''
     out = []
     for i in data:
-        out.append(f"{'='*8}\nSource: {data[i]['title']} [{data[i]['language']}]\n{data[i]['description']} {data[i]['link']}")
-        # print(f"{'='*8}\nSource: {data[i]['title']} [{data[i]['language']}]\n{data[i]['description']} {data[i]['link']}")
+        out.append(f"{'='*8}\nSource: {data[i]['title']} \
+                    [{data[i]['language']}] \
+                    \n{data[i]['description']} {data[i]['link']}")
         for item in data[i]['items']:
-            # print(f"{'-'*16}\nTitle: {item['title']}\
-            #     \nContent:\n{item['description']}\
-            #     \nTime: {item['pubDate']}\nLink: {item['link']}\n{'-'*16}\n")
             out.append(f"{'-'*16}\nTitle: {item['title']}\
                 \nContent:\n{item['description']}\
                 \nTime: {item['pubDate']}\nLink: {item['link']}\n{'-'*16}\n")
-        # print(f"{'='*8}")
         out.append(f"{'='*8}")
     return out
 
+
+def make_filename(url: str, cachedir: str):
+    ''' creates clean filename from url'''
+    # taking url from source arg
+    # replacing all special symbols to get clean string
+    regexpatt = r'\W'
+    cleanurl = (re.sub(regexpatt, '', url))
+    # now cleanurl does not contain any special symbols (:,/)
+    # can be used as filename
+    filename = cachedir + cleanurl
+    return filename
+
+
+def cache_make(data: dict, filename: str):
+    ''' gets python dict and saves it as filename'''
+    with open(filename, 'w') as file:
+        json.dump(data, file)
+
+def cache_check_path(path):
+    '''checks if cache path exists
+    returns true or false
+    '''
+    try:
+      with open(path, 'r'):
+        logging.info(f'Opened cache file: {path}')
+        return True
+    except:
+        logging.error(f'No valid cache found: {path}')
+        return False
+
+def validate_date(date: str):
+    ''' Checks for correct data submition when --date flag is used,
+        returns unixtime or False '''
+    # stime = "22/01/23"
+    try:
+        unixtime = int(
+            datetime.datetime.strptime(date, "%Y/%m/%d")
+            .timestamp())
+        return unixtime
+    except (ValueError, TypeError) as e:
+        logging.error(f'Time error: {e}')
+        return False
+
+
+def cache_find_by_date(filename: str, selectdate: str):
+    ''' Loads json cache file, searching for matching date in topics,
+    creates python dict that is understandable by
+    user_presentation() and json_presentation(),
+    returns False if fails to find topic by specified date'''
+    # load json file
+    with open(filename, 'r') as file:
+        data = json.load(file)
+    chaninfo = {}
+    chan_matching_topics = []
+    itemscount = 0
+    # create python dict
+    for channel in data:
+        for topic in data[channel]['items']:
+            # convert item's pubDate to unix time
+            unixtime = int(
+                datetime.datetime.strptime(topic['pubDate'], "%a, %d %b \
+                %Y %H:%M:%S %z").timestamp())
+            # compare topic time with specified time
+            # finds matches in range of 1 day (86400 seconds)
+            if not (unixtime <= selectdate - 86400) and \
+                    not (unixtime >= selectdate + 86400):
+                chan_matching_topics.append(topic)
+                itemscount += 1
+            chaninfo[channel] = {
+                'title': data[channel]['title'],
+                'description': data[channel]['description'],
+                'language': data[channel]['language'],
+                'link': data[channel]['link'],
+                'items': chan_matching_topics
+                }
+    if itemscount == 0:
+        return False
+    else:
+        return chaninfo
+
+
 def main():
+    cachedir = './testcache/'
     argparser = argparse.ArgumentParser(description='RSS reader')
     version = '0.1'
-    argparser.version = ('{} version: {}').format(argparser.description, version)
-    argparser.add_argument('source', metavar='[RSS URL]', type=str,
-                            help='url of rss feed')
-    argparser.add_argument('-l', '--limit', metavar='LIMIT', action='store', type=int,
-                            help='limits output number of articles from feed')
-    argparser.add_argument('-v', '--version', action='version', 
-                            help='Print version info')
-    argparser.add_argument('-j', '--json', action='store_true', 
-                            help='Print result as JSON in stdout')
-    argparser.add_argument('--verbose', action='store_true', 
-                            help='Outputs verbose status messages')
+    argparser.version = ('{} version: {}').format(
+            argparser.description, version)
+    argparser.add_argument('source', metavar='[RSS URL]',
+                           type=str,
+                           help='url of rss feed')
+    argparser.add_argument('-l', '--limit', metavar='LIMIT', action='store',
+                           type=int,
+                           help='limits output number of articles from feed')
+    argparser.add_argument('-v', '--version', action='version',
+                           help='Print version info')
+    argparser.add_argument('-j', '--json', action='store_true',
+                           help='Print result as JSON in stdout')
+    argparser.add_argument('--date', action='store', type=str,
+                           help='Specifies date in %%Y%%m%%d format \
+                           to retrieve news from cache for specified date')
+    argparser.add_argument('--verbose', action='store_true',
+                           help='Outputs verbose status messages')
     args = argparser.parse_args()
-    if args.verbose: 
+    if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
         logging.debug('verbose logging enabled')
-    text = httpGetFeed(args.source)
-    if text:
-        if checkIfRss(text):
-            data = parseRSS(text, args.limit)
-            if args.json: print(jsonPresentation(data))
-            else: print(''.join(userPresentation(data)))
+    if args.date:
+        unixtime = validate_date(args.date)
+        if unixtime:
+            logging.info(f'Date valid {args.date}')
+            filename = make_filename(args.source, cachedir)
+            if cache_check_path(filename):
+                logging.info('Found cache')
+                data = cache_find_by_date(filename, unixtime)
+                if data:
+                    print(''.join(user_presentation(data)))
+                else:
+                    logging.error(f'No topics found for {args.date}')
+            else:
+                text = http_get_feed(args.source)
+                if check_if_rss(text):
+                    cache_make(parse_rss(text), filename)
+                    data = cache_find_by_date(filename, unixtime)
+                    print(''.join(user_presentation(data)))
+        else:
+            # date format error
+            logging.error('Invalid date format')
+            pass
+    else:
+        text = http_get_feed(args.source)
+        if check_if_rss(text):
+            data = parse_rss(text, args.limit)
+            if args.json:
+                print(json_presentation(data))
+            else:
+                print(''.join(user_presentation(data)))
+
 
 if __name__ == '__main__':
     main()
