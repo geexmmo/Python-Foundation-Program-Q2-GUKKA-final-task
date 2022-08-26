@@ -1,16 +1,16 @@
 # Iteration 1:
-# installation
+## installation
 clone repo   
 ```pip install -r requirements.txt```
-# usage
-## get feed
+## usage
+### get feed
 ```python3 FinalV1.py http://feeds.rssboard.org/rssboard```
-## get help
+### get help
 ```python3 FinalV1.py -h```
-# JSON output
-## JSON example with validation
+## JSON output
+### JSON example with validation
 ```python3 FinalV1.py http://feeds.rssboard.org/rssboard -l 1 -j | jq```
-## JSON structure
+### JSON structure
 ```json
 {
   "0 - channel number": {
