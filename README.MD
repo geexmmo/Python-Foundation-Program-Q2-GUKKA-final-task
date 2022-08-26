@@ -29,8 +29,8 @@ clone repo
   }
 }
 ```
-# TEST
-## unit testing Iteration 1
+## tests
+### unit testing Iteration 1
 ```bash
 python FinalV1-test.py
 ```
