@@ -169,9 +169,9 @@ def cache_find_by_date(filename: str, selectdate: str):
                 datetime.datetime.strptime(topic['pubDate'], "%a, %d %b \
                 %Y %H:%M:%S %z").timestamp())
             # compare topic time with specified time
-            # finds matches in range of 1 day (86400 seconds)
-            if not (unixtime <= selectdate - 86400) and \
-                    not (unixtime >= selectdate + 86400):
+            # finds matches in range of 2 days (86400*2 seconds)
+            if not (unixtime <= selectdate - 86400*2) and \
+                    not (unixtime >= selectdate + 86400*2):
                 chan_matching_topics.append(topic)
                 itemscount += 1
             chaninfo[channel] = {
