@@ -7,6 +7,17 @@ import datetime
 import re
 from fpdf import FPDF, HTMLMixin
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 
 def check_if_rss(responce):
     ''' Checks if feeded data contains valid rss tags '''
@@ -92,7 +103,7 @@ def json_presentation(data: dict):
     return json.dumps(data)
 
 
-def user_presentation(data: dict):
+def user_presentation(data: dict, colorize: bool):
     ''' Composes data as human readable cli output '''
     out = []
     for i in data:
@@ -100,9 +111,22 @@ def user_presentation(data: dict):
                     [{data[i]['language']}] \
                     \n{data[i]['description']} {data[i]['link']}")
         for item in data[i]['items']:
-            out.append(f"{'-'*16}\nTitle: {item['title']}\
-                \nContent:\n{item['description']}\
-                \nTime: {item['pubDate']}\nLink: {item['link']}\n{'-'*16}\n")
+            # out.append(str(item.keys()))
+            for key in item.keys():
+                out.append(f'{key} -:- {item[key]}')
+            # out.append(f"{'-'*16}\n \
+                # {bcolors.WARNING if colorize else ''} \
+                # Title: \
+                # {bcolors.ENDC if colorize else ''} \
+                # {item['title']} \
+                # \n{bcolors.WARNING if colorize else ''}Content:\
+                # {bcolors.ENDC if colorize else ''}\n{item['description']}\
+                # \n{bcolors.WARNING if colorize else ''}Time: \
+                # {bcolors.ENDC if colorize else ''}\
+                # {item['pubDate']}\
+                # \n{bcolors.WARNING if colorize else ''}Link: \
+                # {bcolors.ENDC if colorize else ''}\
+                # {item['link']}\n{'-'*16}\n")
         out.append(f"{'='*8}")
     return out
 
@@ -144,13 +168,14 @@ def validate_date(date: str):
         unixtime = int(
             datetime.datetime.strptime(date, "%Y/%m/%d")
             .timestamp())
+        print('input time',unixtime)
         return unixtime
     except (ValueError, TypeError) as e:
         logging.error(f'Time error: {e}')
         return False
 
 
-def cache_find_by_date(filename: str, selectdate: str):
+def cache_find_by_date(filename: str, input_time: str):
     ''' Loads json cache file, searching for matching date in topics,
     creates python dict that is understandable by
     user_presentation() and json_presentation(),
@@ -165,15 +190,21 @@ def cache_find_by_date(filename: str, selectdate: str):
     for channel in data:
         for topic in data[channel]['items']:
             # convert item's pubDate to unix time
-            unixtime = int(
+            topic_time = int(
                 datetime.datetime.strptime(topic['pubDate'], "%a, %d %b \
                 %Y %H:%M:%S %z").timestamp())
             # compare topic time with specified time
             # finds matches in range of 1 day (86400 seconds)
-            if not (unixtime <= selectdate - 86400) and \
-                    not (unixtime >= selectdate + 86400):
+            print('topic time', topic_time)
+            if topic_time <= input_time - 86400 and \
+                    topic_time >= input_time + 86400:
+                print(f"{'match'*8}")
                 chan_matching_topics.append(topic)
                 itemscount += 1
+            else:
+                print('no match')
+                print('input:',input_time, 'input_time + 86400: ',input_time + 86400)
+                print('topic:', topic_time, 'topic_time + 86400', topic_time + 86400, 'topic_time - 86400:', topic_time - 86400)
             chaninfo[channel] = {
                 'title': data[channel]['title'],
                 'description': data[channel]['description'],
@@ -275,6 +306,8 @@ def main():
                            help='Outputs HTML file, file path must be supplied ("/tmp/file.html")')
     argparser.add_argument('--to-pdf', action='store', type=str,
                            help='Outputs PDF file, file path must be supplied ("/tmp/file.pdf")')
+    argparser.add_argument('--colorize', action='store_true',
+                           help='Adds colorization to outputs')
     args = argparser.parse_args()
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
@@ -288,7 +321,7 @@ def main():
                 logging.info('Found cache')
                 data = cache_find_by_date(filename, unixtime)
                 if data:
-                    print(''.join(user_presentation(data)))
+                    print(''.join(user_presentation(data, args.colorize)))
                 else:
                     logging.error(f'No topics found for {args.date}')
             else:
@@ -296,7 +329,7 @@ def main():
                 if check_if_rss(text):
                     cache_make(parse_rss(text), filename)
                     data = cache_find_by_date(filename, unixtime)
-                    print(''.join(user_presentation(data)))
+                    print(''.join(user_presentation(data, args.colorize)))
         else:
             # date format error
             logging.error('Invalid date format')
@@ -312,7 +345,7 @@ def main():
             elif args.to_pdf:
                 convert_to_pdf(data, args.to_pdf)
             else:
-                print(''.join(user_presentation(data)))
+                print(''.join(user_presentation(data, args.colorize)))
 
 
 if __name__ == '__main__':
