@@ -113,21 +113,9 @@ def user_presentation(data: dict, colorize: bool):
         for item in data[i]['items']:
             # out.append(str(item.keys()))
             for key in item.keys():
-                out.append(f'{key} -:- {item[key]}')
-            # out.append(f"{'-'*16}\n \
-                # {bcolors.WARNING if colorize else ''} \
-                # Title: \
-                # {bcolors.ENDC if colorize else ''} \
-                # {item['title']} \
-                # \n{bcolors.WARNING if colorize else ''}Content:\
-                # {bcolors.ENDC if colorize else ''}\n{item['description']}\
-                # \n{bcolors.WARNING if colorize else ''}Time: \
-                # {bcolors.ENDC if colorize else ''}\
-                # {item['pubDate']}\
-                # \n{bcolors.WARNING if colorize else ''}Link: \
-                # {bcolors.ENDC if colorize else ''}\
-                # {item['link']}\n{'-'*16}\n")
-        out.append(f"{'='*8}")
+                out.append(f'{bcolors.WARNING if colorize else ""}\
+                    {key}{bcolors.ENDC if colorize else ""}:{item[key]}\n')
+            out.append(f'{"="*8}\n')
     return out
 
 
@@ -195,16 +183,13 @@ def cache_find_by_date(filename: str, input_time: str):
                 %Y %H:%M:%S %z").timestamp())
             # compare topic time with specified time
             # finds matches in range of 1 day (86400 seconds)
-            print('topic time', topic_time)
-            if topic_time <= input_time - 86400 and \
-                    topic_time >= input_time + 86400:
-                print(f"{'match'*8}")
+            if not (topic_time <= input_time - 86400*2) and \
+                   not (topic_time >= input_time + 86400*2):
                 chan_matching_topics.append(topic)
                 itemscount += 1
+                logging.debug(f'Time matched!: {input_time}, {topic_time}')
             else:
-                print('no match')
-                print('input:',input_time, 'input_time + 86400: ',input_time + 86400)
-                print('topic:', topic_time, 'topic_time + 86400', topic_time + 86400, 'topic_time - 86400:', topic_time - 86400)
+                logging.debug(f'Time not matched: {input_time}')
             chaninfo[channel] = {
                 'title': data[channel]['title'],
                 'description': data[channel]['description'],

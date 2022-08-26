@@ -73,3 +73,20 @@ Script will cache feed when --date argument in format %Y%m%d is passed
 ```bash
 python3 FinalV1.py http://feeds.rssboard.org/rssboard --date 2014/04/02
 ```
+
+# Iteration 4:
+Format convertsion
+Supported formats: html, pdf
+## usage
+```bash
+python3 FinalV1.py http://feeds.rssboard.org/rssboard --to-html /tmp/file.html
+python3 FinalV1.py http://feeds.rssboard.org/rssboard --to-pdf /tmp/file.pdf
+```
+# iteration 5:
+Colorization
+Outputs colorized text (yellow ;D) to cli
+```bash
+python3 FinalV1.py http://feeds.rssboard.org/rssboard --colorize
+python3 FinalV1.py http://feeds.rssboard.org/rssboard --colorize -l 2
+python3 FinalV1.py http://feeds.rssboard.org/rssboard --date 2008/01/17 --colorize
+```

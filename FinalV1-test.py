@@ -82,8 +82,9 @@ class TestSum(TestCase):
                         "description": "item text2",
                         "pubDate": "Wed, 02 Apr 2014 11:12:53 -0400 - item publication date"
                     }]}}
-        self.assertEqual(len(FinalV1.user_presentation(object)), 3)
-        self.assertEqual(len(FinalV1.user_presentation(objectTwo)), 4)
+        # print(len(''.join(FinalV1.user_presentation(object, False))))
+        self.assertEqual(len(''.join(FinalV1.user_presentation(object, False))), 253)
+        self.assertEqual(len(FinalV1.user_presentation(objectTwo, False)), 11)
 
 
     def test_make_filename(self):
@@ -133,7 +134,7 @@ class TestSum(TestCase):
         test1 = FinalV1.cache_find_by_date(filename, FinalV1.validate_date('2014/04/02'))
         test2 = FinalV1.cache_find_by_date(filename, FinalV1.validate_date('2000/01/01'))
         self.assertGreater(len(repr(test1)), 50)
-        self.assertGreater(test2, False)
+        self.assertEqual(test2, False)
 
 if __name__ == "__main__":
     unittest.main()
