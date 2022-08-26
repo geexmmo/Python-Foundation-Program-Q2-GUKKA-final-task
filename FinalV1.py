@@ -1,4 +1,3 @@
-from cmath import log
 import logging
 import argparse
 import requests
@@ -6,6 +5,7 @@ import xml.etree.ElementTree as ET
 import json
 import datetime
 import re
+from fpdf import FPDF, HTMLMixin
 
 
 def check_if_rss(responce):
@@ -187,6 +187,69 @@ def cache_find_by_date(filename: str, selectdate: str):
         return chaninfo
 
 
+def convert_to_html(data: str, filename: str):
+    ''' Converts data as html file output '''
+    out = []
+    for i in data:
+        out.append(f"<div id='header' style='background-color: blanchedalmond;'>\
+            Source: {data[i]['title']} \
+            Language: [{data[i]['language']}] \
+                    </br>{data[i]['description']} {data[i]['link']}</div>")
+        out.append('<div id="content">')
+        for item in data[i]['items']:
+            out.append(f"</br><container> \
+                <div id='contenthead'> \
+                Title: {item['title']} \
+                </br>Time: {item['pubDate']}</br> \
+                Link: <a href=\'{item['link']}\'>{item['link']}</a></div> \
+                </br><div id='content' style='background-color: beige;'> \
+                Content:</br>{item['description']}</div></container>")
+        out.append('</div>')
+    try:
+        with open(filename, 'w') as f:
+            f.writelines(out)
+    except:
+        logging.error('Failed to save html')
+
+
+
+def convert_to_pdf(data: dict, filename: str):
+    ''' Converts data as pdf file output '''
+    class PDF(FPDF, HTMLMixin):
+        def header(self):
+            self.set_font("helvetica", "B", 12)
+            title = []
+            for i in data:
+                title.append(data[i]['title'])
+                title.append(data[i]['description'])
+                title.append(data[i]['language'])
+                title.append(data[i]['link'])
+            for i in data:
+                for item in data[i].keys():
+                    if item != 'items':
+                        self.multi_cell(0, 5, f'{data[i][item]}', border=1, align="C", new_x="LEFT",new_y="NEXT")
+            self.ln(10)
+
+
+        def footer(self):
+            self.set_y(-15)
+            self.set_font("helvetica", "I", 8)
+            self.cell(0, 10, f"Page {self.page_no()}/{{nb}}", align="C")
+
+
+    pdf = PDF()
+    for i in data:
+        pdf.add_page()
+        pdf.set_font("helvetica", '', 10)
+        for y in data[i]['items']:
+            text = f"<p><b>{y['title']}</b>&nbsp;{y['pubDate']}</p></br>{y['description']}"
+            pdf.write_html(text)  #y['pubDate'], y['description'], y['title']
+            pdf.ln()
+            # pdf.add_page()
+    pdf.output(filename)
+
+
+
 def main():
     cachedir = './testcache/'
     argparser = argparse.ArgumentParser(description='RSS reader')
@@ -208,6 +271,10 @@ def main():
                            to retrieve news from cache for specified date')
     argparser.add_argument('--verbose', action='store_true',
                            help='Outputs verbose status messages')
+    argparser.add_argument('--to-html', action='store', type=str,
+                           help='Outputs HTML file, file path must be supplied ("/tmp/file.html")')
+    argparser.add_argument('--to-pdf', action='store', type=str,
+                           help='Outputs PDF file, file path must be supplied ("/tmp/file.pdf")')
     args = argparser.parse_args()
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
@@ -240,6 +307,10 @@ def main():
             data = parse_rss(text, args.limit)
             if args.json:
                 print(json_presentation(data))
+            elif args.to_html:
+                convert_to_html(data, args.to_html)
+            elif args.to_pdf:
+                convert_to_pdf(data, args.to_pdf)
             else:
                 print(''.join(user_presentation(data)))
 
