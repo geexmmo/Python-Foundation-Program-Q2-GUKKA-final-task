@@ -85,6 +85,9 @@ python3 FinalV1.py http://feeds.rssboard.org/rssboard --date 2008/01/17 --colori
 # iteration 6
 ## database
 docker run --name postgres-test -p 5432:5432 -e POSTGRES_PASSWORD=mysecretpassword -d postgres
-uvicorn web_app.main:app --reload
-## register
-http://127.0.0.1:8000/docs#/default/create_user_users__post
+python main.py
+## register user
+curl -i -X POST -H "Content-Type: application/json" -d '{"username":"user","password":"password"}' http://127.0.0.1:5000/api/users
+## get feed
+ auth not endpoint enabled right now
+curl 'http://172.0.0.1:5000/api/req' -H "Content-Type: application/json" -d '{"source":"http://feeds.rssboard.org/rssboard","json":"ok","limit":"2"}'
