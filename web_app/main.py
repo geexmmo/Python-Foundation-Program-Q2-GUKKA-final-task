@@ -1,4 +1,6 @@
+from os import link
 import time
+import datetime
 from flask import Flask, abort, request, jsonify, g, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_httpauth import HTTPBasicAuth
@@ -23,34 +25,6 @@ class User(db.Model):
     username = db.Column(db.String(32), index=True)
     password_hash = db.Column(db.String(128))
 
-class Chan(db.Model):
-    # __tablename__ = 'cache_channels'
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(512), nullable=False)
-    description = db.Column(db.String(512), nullable=False)
-    language = db.Column(db.String(32), nullable=False)
-    link = db.Column(db.String(64), nullable=False)
-    
-    def __repr__(self):
-        return f'<Channel {self.title} {self.items}>'
-
-class Items(db.Model):
-    # __tablename__ = 'cache_items'
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(512), nullable=False)
-    link = db.Column(db.String(512), nullable=False)
-    description = db.Column(db.String(), nullable=False)
-    pubDate = db.Column(db.String(128), nullable=False)
-    channel_id = db.Column(db.Integer, db.ForeignKey('chan.id'),
-        nullable=False)
-    channel = db.relationship('Chan',
-        backref=db.backref('items', lazy=True))
-
-    def __repr__(self):
-        return f'<Items {self.title} {self.channel_id}>'
-
-
-
     def hash_password(self, password):
         self.password_hash = generate_password_hash(password)
 
@@ -71,18 +45,52 @@ class Items(db.Model):
             return
         return User.query.get(data['id'])
 
+
+class Chan(db.Model):
+    # __tablename__ = 'cache_channels'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(512), nullable=False)
+    description = db.Column(db.String(512), nullable=False)
+    language = db.Column(db.String(32), nullable=False)
+    link = db.Column(db.String(64), nullable=False)
+    source = db.Column(db.String(128), nullable=False)
+    
+    def __repr__(self):
+        return f'<Channel {self.title} {self.items}>'
+
+class Items(db.Model):
+    # __tablename__ = 'cache_items'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(512), nullable=False)
+    link = db.Column(db.String(512), nullable=False)
+    description = db.Column(db.String(), nullable=False)
+    pubDate = db.Column(db.String(128), nullable=False)
+    channel_id = db.Column(db.Integer, db.ForeignKey('chan.id'),
+        nullable=False)
+    channel = db.relationship('Chan',
+        backref=db.backref('items', lazy=True))
+
+    def __repr__(self):
+        return f'<Items {self.title} {self.channel_id}>'
+        
+    def json(self):
+        return {'title': self.title, 'link': self.link, 
+                'description': self.description, 'pubDate': self.pubDate}
+
+
 def arg_parser(json):
         return {'source': json.get('source') if json.get('source') else None,
             'limit': int(json.get('limit')) if json.get('limit') else None,
             'json': json.get('json') if json.get('json') else None,
             'date': json.get('date') if json.get('date') else None}
 
-def cache_make(data):
+def cache_make(data, source):
     for i in data:
         chaninfo = Chan(title=data[i]['title'],
                 description=data[i]['description'],
                 language=data[i]['language'],
-                link=data[i]['link'])
+                link=data[i]['link'],
+                source=source)
         for dataitems in data[i]['items']:
             item = Items(title=dataitems['title'],
                     link=dataitems['link'],
@@ -92,8 +100,36 @@ def cache_make(data):
             #items comes from relation mapping
             chaninfo.items.append(item)
         db.session.add(chaninfo)
-    db.session.commit()
-    return 'cached, check'
+        db.session.commit()
+
+def cache_find_by_date(source, unixtime):
+    channel = Chan.query.filter_by(source=source).first_or_404()
+    items = Items.query.filter_by(channel_id=channel.id).all()
+    filtered_items = []
+    for item in items:
+        topic_time = int(
+                datetime.datetime.strptime(item.pubDate, "%a, %d %b \
+                %Y %H:%M:%S %z").timestamp())
+        if not (topic_time <= unixtime - 86400*2) and \
+                   not (topic_time >= unixtime + 86400*2):
+            filtered_items.append(item.json())
+    return filtered_items
+
+
+def cache_return_full(source):
+    channel = Chan.query.filter_by(source=source).first_or_404()
+    items = Items.query.filter_by(channel_id=channel.id).all()
+    returndict = {'id': channel.id,
+    'title': channel.title,
+    'description': channel.description,
+    'language': channel.language,
+    'link': channel.link,
+    'source': channel.source,
+    'items': []}
+    for item in channel.items:
+        returndict['items'].append(item.json())
+    # print(channel)
+    return returndict
 
 
 @auth.verify_password
@@ -109,26 +145,32 @@ def verify_password(username_or_token, password):
     return True
 
 @app.route('/api/cache', methods=['POST'])
+@auth.login_required
 def cache_test():
     args = arg_parser(request.json)
-    # get feed
-    text = FinalV1.http_get_feed(args['source'])
-    # if feed valid
-    if FinalV1.check_if_rss(text):
-        # build python dict
-        data = FinalV1.parse_rss(text, args['limit'])
+    if Chan.query.filter_by(source=args['source']).first() is None:
+        print('not cached')
+        # if not cached
+        text = FinalV1.http_get_feed(args['source'])
+        if FinalV1.check_if_rss(text):
+            data = FinalV1.parse_rss(text)
+            cache_make(data, args['source'])
+            if args['date']:
+                unixtime = FinalV1.validate_date(args['date'])
+                if unixtime:
+                    return cache_find_by_date(args['source'], unixtime)
+            else: 
+                return cache_return_full(args['source'])
+        else:
+            return 'not rss'
+    else:
+        # cached already
         if args['date']:
-            unixtime = FinalV1.validate_date(args['date'])
-            if unixtime:
-                # logging.info(f'Date valid {args.date}')
-                # FinalV1.logging.info('Found cache')
-                # data = FinalV1.cache_find_by_date(filename, unixtime)
-                # return data
-                return cache_make(data)
-            # return(FinalV1.json_presentation(data))
-        else: 
-            return 'no data arg'
-    # return
+                unixtime = FinalV1.validate_date(args['date'])
+                if unixtime:
+                    return cache_find_by_date(args['source'], unixtime)
+        else:
+            return cache_return_full(args['source'])
 
 @app.route('/api/users', methods=['POST'])
 def new_user():
@@ -168,6 +210,7 @@ def get_resource():
 
 
 @app.route('/api/req', methods=['POST'])
+@auth.login_required
 def req_test():
     args = arg_parser(request.json)
     text = FinalV1.http_get_feed(args['source'])

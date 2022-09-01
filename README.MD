@@ -87,16 +87,26 @@ python3 FinalV1.py http://feeds.rssboard.org/rssboard --date 2008/01/17 --colori
 docker run --name postgres-test -p 5432:5432 -e POSTGRES_PASSWORD=mysecretpassword -d postgres
 python main.py
 ## register user
+```bash
 curl -i -X POST -H "Content-Type: application/json" -d '{"username":"user","password":"password"}' http://127.0.0.1:5000/api/users
+```
+## get token
+not required but there it is:
+```bash
+curl -i -H "Content-Type: application/json"  http://127.0.0.1:5000/api/token -u user
+```
 ## get feed
- auth not endpoint enabled right now
-curl 'http://127.0.0.1:5000/api/req' -H "Content-Type: application/json" -d '{"source":"http://feeds.rssboard.org/rssboard","json":"ok","limit":"2"}'
+Limit items and json/cli output
+```bash
+curl 'http://127.0.0.1:5000/api/req' -H "Content-Type: application/json" -d '{"source":"http://feeds.rssboard.org/rssboard","json":"ok","limit":"2"}' -u TOKEN/ORUSERNAME:x
+```
 
 ## database caching
->>> from main import Chan, Items
->>> chan = Chan(title='test',description='testdesc',language='en-us',link='www.kg/tet')
->>> item = Items(title='titel1',link='www.kg/tet/1',description='dsest',pubDate='01/01/01',channel=chan)
->>> chan.items.append(item)
->>> db.session.add(chan)
->>> db.session.commit()
->>> Chan.query.all()
+endpoint fetches full rss feed, caches feed if not cached already into database
+```bash
+curl 'http://127.0.0.1:5000/api/cache' -H "Content-Type: application/json" -d '{"source":"http://feeds.rssboard.org/rssboard"}' -u TOKEN/ORUSERNAME:x
+```
+## query cache by date
+```bash
+curl 'http://127.0.0.1:5000/api/cache' -H "Content-Type: application/json" -d '{"source":"http://feeds.rssboard.org/rssboard","date":"2014/04/02"}' -u TOKEN/ORUSERNAME:x
+```
