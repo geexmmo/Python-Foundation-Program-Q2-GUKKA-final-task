@@ -118,7 +118,7 @@ def cache_find_by_date(source, unixtime):
 
 def cache_return_full(source):
     channel = Chan.query.filter_by(source=source).first_or_404()
-    items = Items.query.filter_by(channel_id=channel.id).all()
+    # items = Items.query.filter_by(channel_id=channel.id).all()
     returndict = {'id': channel.id,
     'title': channel.title,
     'description': channel.description,
@@ -131,6 +131,7 @@ def cache_return_full(source):
     # print(channel)
     return returndict
 
+db.create_all()
 
 @auth.verify_password
 def verify_password(username_or_token, password):
