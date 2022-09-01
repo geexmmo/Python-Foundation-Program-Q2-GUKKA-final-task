@@ -90,4 +90,13 @@ python main.py
 curl -i -X POST -H "Content-Type: application/json" -d '{"username":"user","password":"password"}' http://127.0.0.1:5000/api/users
 ## get feed
  auth not endpoint enabled right now
-curl 'http://172.0.0.1:5000/api/req' -H "Content-Type: application/json" -d '{"source":"http://feeds.rssboard.org/rssboard","json":"ok","limit":"2"}'
+curl 'http://127.0.0.1:5000/api/req' -H "Content-Type: application/json" -d '{"source":"http://feeds.rssboard.org/rssboard","json":"ok","limit":"2"}'
+
+## database caching
+>>> from main import Chan, Items
+>>> chan = Chan(title='test',description='testdesc',language='en-us',link='www.kg/tet')
+>>> item = Items(title='titel1',link='www.kg/tet/1',description='dsest',pubDate='01/01/01',channel=chan)
+>>> chan.items.append(item)
+>>> db.session.add(chan)
+>>> db.session.commit()
+>>> Chan.query.all()

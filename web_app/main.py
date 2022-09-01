@@ -23,6 +23,34 @@ class User(db.Model):
     username = db.Column(db.String(32), index=True)
     password_hash = db.Column(db.String(128))
 
+class Chan(db.Model):
+    # __tablename__ = 'cache_channels'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(512), nullable=False)
+    description = db.Column(db.String(512), nullable=False)
+    language = db.Column(db.String(32), nullable=False)
+    link = db.Column(db.String(64), nullable=False)
+    
+    def __repr__(self):
+        return f'<Channel {self.title} {self.items}>'
+
+class Items(db.Model):
+    # __tablename__ = 'cache_items'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(512), nullable=False)
+    link = db.Column(db.String(512), nullable=False)
+    description = db.Column(db.String(), nullable=False)
+    pubDate = db.Column(db.String(128), nullable=False)
+    channel_id = db.Column(db.Integer, db.ForeignKey('chan.id'),
+        nullable=False)
+    channel = db.relationship('Chan',
+        backref=db.backref('items', lazy=True))
+
+    def __repr__(self):
+        return f'<Items {self.title} {self.channel_id}>'
+
+
+
     def hash_password(self, password):
         self.password_hash = generate_password_hash(password)
 
@@ -33,7 +61,7 @@ class User(db.Model):
         return jwt.encode(
             {'id': self.id, 'exp': time.time() + expires_in},
             app.config['SECRET_KEY'], algorithm='HS256')
-
+    
     @staticmethod
     def verify_auth_token(token):
         try:
@@ -42,6 +70,30 @@ class User(db.Model):
         except:
             return
         return User.query.get(data['id'])
+
+def arg_parser(json):
+        return {'source': json.get('source') if json.get('source') else None,
+            'limit': int(json.get('limit')) if json.get('limit') else None,
+            'json': json.get('json') if json.get('json') else None,
+            'date': json.get('date') if json.get('date') else None}
+
+def cache_make(data):
+    for i in data:
+        chaninfo = Chan(title=data[i]['title'],
+                description=data[i]['description'],
+                language=data[i]['language'],
+                link=data[i]['link'])
+        for dataitems in data[i]['items']:
+            item = Items(title=dataitems['title'],
+                    link=dataitems['link'],
+                    description=dataitems['description'],
+                    pubDate=dataitems['pubDate'],
+                    channel=chaninfo)
+            #items comes from relation mapping
+            chaninfo.items.append(item)
+        db.session.add(chaninfo)
+    db.session.commit()
+    return 'cached, check'
 
 
 @auth.verify_password
@@ -56,6 +108,27 @@ def verify_password(username_or_token, password):
     g.user = user
     return True
 
+@app.route('/api/cache', methods=['POST'])
+def cache_test():
+    args = arg_parser(request.json)
+    # get feed
+    text = FinalV1.http_get_feed(args['source'])
+    # if feed valid
+    if FinalV1.check_if_rss(text):
+        # build python dict
+        data = FinalV1.parse_rss(text, args['limit'])
+        if args['date']:
+            unixtime = FinalV1.validate_date(args['date'])
+            if unixtime:
+                # logging.info(f'Date valid {args.date}')
+                # FinalV1.logging.info('Found cache')
+                # data = FinalV1.cache_find_by_date(filename, unixtime)
+                # return data
+                return cache_make(data)
+            # return(FinalV1.json_presentation(data))
+        else: 
+            return 'no data arg'
+    # return
 
 @app.route('/api/users', methods=['POST'])
 def new_user():
@@ -96,12 +169,7 @@ def get_resource():
 
 @app.route('/api/req', methods=['POST'])
 def req_test():
-    # username = request.json.get('username')
-    args = {'source': request.json.get('source') if request.json.get('source') else None,
-            'limit': int(request.json.get('limit')) if request.json.get('limit') else None,
-            'json': request.json.get('json') if request.json.get('json') else None}
-    # source = request.json.get('source')
-    # do_json = request.json.get('json')
+    args = arg_parser(request.json)
     text = FinalV1.http_get_feed(args['source'])
     if FinalV1.check_if_rss(text):
         data = FinalV1.parse_rss(text, args['limit'])
@@ -113,10 +181,6 @@ def req_test():
             FinalV1.convert_to_pdf(data, args.to_pdf)
         else:
             return(''.join(FinalV1.user_presentation(data)))
-    # return f'all: {request.json}\n\
-    #         flagtest:\n\
-    #         source: {source if source else "no source"}\n\
-    #         json: {do_json if do_json else "not json"}'
 
 
 def main():
