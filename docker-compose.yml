@@ -1,0 +1,22 @@
+version: '3.3'
+
+services:
+  python-app:
+    build: ./web_app
+    container_name: python-app
+    ports:
+      - 5000:5000
+    depends_on:
+      - postgres-finaltask
+    restart: always
+
+  postgres-finaltask:
+    image: postgres:latest
+    container_name: postgres-finaltask
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: mysecretpassword
+    volumes:
+      - ./web_app/pginit:/docker-entrypoint-initdb.d/

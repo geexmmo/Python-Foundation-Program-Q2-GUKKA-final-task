@@ -1,10 +1,8 @@
-click
 Flask
 Flask-HTTPAuth
 Flask-SQLAlchemy
-itsdangerous
-Jinja2
-MarkupSafe
 PyJWT
 SQLAlchemy
-Werkzeug
+requests
+fpdf2
+psycopg2-binary

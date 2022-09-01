@@ -83,9 +83,10 @@ python3 FinalV1.py http://feeds.rssboard.org/rssboard --colorize -l 2
 python3 FinalV1.py http://feeds.rssboard.org/rssboard --date 2008/01/17 --colorize
 ```
 # iteration 6
-## database
-docker run --name postgres-test -p 5432:5432 -e POSTGRES_PASSWORD=mysecretpassword -d postgres
-python main.py
+## Running docker
+```bash
+docker-compose up
+```
 ## register user
 ```bash
 curl -i -X POST -H "Content-Type: application/json" -d '{"username":"user","password":"password"}' http://127.0.0.1:5000/api/users
