@@ -75,12 +75,13 @@ def parse_rss(xmlstring: str, limit: int = 0):
         itemcounter = 0
         itemlist = []
         for item in channel.iter('item'):
-            if not limit:
-                itemcounter = 0
-                itemlimit = 1  # don't limit items if limit not set
-            else:
-                itemlimit = limit
-            if itemcounter < itemlimit:
+            # if not limit:
+            #     itemcounter = 0
+            #     itemlimit = 1  # don't limit items if limit not set
+            # else:
+            #     itemlimit = limit
+            if itemcounter != limit or itemcounter < 1:
+            # if itemcounter < itemlimit:
                 logging.info(f"Iterating on channel item: {itemcounter} \
                     [{item.find('link').text}]")
                 itemlist.append({
@@ -133,6 +134,7 @@ def make_filename(url: str, cachedir: str):
 
 def cache_make(data: dict, filename: str):
     ''' gets python dict and saves it as filename'''
+    logging.info(f'Making cache of {filename}')
     with open(filename, 'w') as file:
         json.dump(data, file)
 
@@ -161,6 +163,33 @@ def validate_date(date: str):
     except (ValueError, TypeError) as e:
         logging.error(f'Time error: {e}')
         return False
+
+
+def cache_get_full(filename: str, limit: int = 0):
+    ''' Loads json cache file, creates python dict that is understandable by
+    user_presentation() and json_presentation(),
+    honors --limit argument'''
+    logging.info(f'limit set?: {limit}')
+    # load json file
+    with open(filename, 'r') as file:
+        data = json.load(file)
+    chaninfo = {}
+    chat_topics = []    
+    # create python dict
+    topiccount = 0
+    for channel in data:
+        for topic in data[channel]['items']:
+            if topiccount != limit or topiccount < 1:
+                chat_topics.append(topic)
+                chaninfo[channel] = {
+                    'title': data[channel]['title'],
+                    'description': data[channel]['description'],
+                    'language': data[channel]['language'],
+                    'link': data[channel]['link'],
+                    'items': chat_topics
+                    }
+                topiccount += 1
+        return chaninfo
 
 
 def cache_find_by_date(filename: str, input_time: str):
@@ -297,11 +326,14 @@ def main():
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
         logging.debug('verbose logging enabled')
+    ## if --date param 
     if args.date:
         unixtime = validate_date(args.date)
+        # if correct time in --date param
         if unixtime:
             logging.info(f'Date valid {args.date}')
             filename = make_filename(args.source, cachedir)
+            # if cache exists
             if cache_check_path(filename):
                 logging.info('Found cache')
                 data = cache_find_by_date(filename, unixtime)
@@ -309,28 +341,43 @@ def main():
                     print(''.join(user_presentation(data, args.colorize)))
                 else:
                     logging.error(f'No topics found for {args.date}')
+            # no cache exists
             else:
+                logging.info('No cache')
                 text = http_get_feed(args.source)
                 if check_if_rss(text):
                     cache_make(parse_rss(text), filename)
                     data = cache_find_by_date(filename, unixtime)
                     print(''.join(user_presentation(data, args.colorize)))
+        # --date param format error
         else:
-            # date format error
             logging.error('Invalid date format')
             pass
+    # else no --date param, get full cache
     else:
-        text = http_get_feed(args.source)
-        if check_if_rss(text):
-            data = parse_rss(text, args.limit)
-            if args.json:
-                print(json_presentation(data))
-            elif args.to_html:
-                convert_to_html(data, args.to_html)
-            elif args.to_pdf:
-                convert_to_pdf(data, args.to_pdf)
+        #if cached
+        filename = make_filename(args.source, cachedir)
+        if cache_check_path(filename):
+            logging.info('Found cache')
+            data = cache_get_full(filename, args.limit)
+            print(''.join(user_presentation(data, args.colorize)))
+        # else not cached
+        else:
+            logging.info('Cache not found, no --date')
+            text = http_get_feed(args.source)
+            if text and check_if_rss(text):
+                cache_make(parse_rss(text), filename)
+                data = cache_get_full(filename, args.limit)
+                if args.json:
+                    print(json_presentation(data))
+                elif args.to_html:
+                    convert_to_html(data, args.to_html)
+                elif args.to_pdf:
+                    convert_to_pdf(data, args.to_pdf)
+                else:
+                    print(''.join(user_presentation(data, args.colorize)))
             else:
-                print(''.join(user_presentation(data, args.colorize)))
+                logging.error('check url')
 
 
 if __name__ == '__main__':
