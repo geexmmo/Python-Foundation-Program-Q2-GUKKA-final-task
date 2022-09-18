@@ -33,33 +33,57 @@ clone repo
 ### unit testing Iteration 1
 ```bash
 python FinalV1-test.py
-```
-# Iteration 2:
-## building
+```   
+# Iteration 2
+Without entering virtual environement installaton will be performed to the Python user install directory for your platform.   
+Typically ~/.local/, or %APPDATA%\Python on Windows.
+
+Example above performs confined installation in virtual enviroment.   
+Installed package vill be available as long as enviroment is activated (or correct PATH is set)
+
+## Installing
+While this project is hosted on test index of pypi - some dependencies can't be resolved by package manager.  
+Dependencies from normal index shoud be installed before the main package from test index to bypass this.   
 ```bash
-#build
-python3 -m pip install --upgrade build
-python3 -m build
-#upload
-python3 -m pip install --upgrade twine
-python3 -m twine upload --repository testpypi dist/*
-```
-## installing
-```bash
-python3 -m venv rssreadertest #ensure clean and isolated python environemnt, you dont want THIS in your system
+cd /tmp
+#ensure clean and isolated python environemnt, you dont want THIS in your system
+python3 -m venv rssreadertest
 cd rssreadertest
+source bin/activate
+
+# requirements bypass
+curl https://github.com/geexmmo/Python-Foundation-Program-Q2-GUKKA-final-task/raw/main/requirements.txt -kL -o requirements.txt
+pip install -r requirements.txt
+
 python3 -m pip install --index-url https://test.pypi.org/simple/ rssreader-arthur
 ```
 
 ## running
+As script provided by pip
+```bash
+rss-reader -v
+# RSS reader version: 0.1
+
+# geexmmo@pc /tmp/rssreadertest % whereis rss-reader
+# rss-reader: /tmp/rssreadertest/bin/rss-reader
+```
+Or extracted from package
 ```
 python lib/python3.10/site-packages/rssreader_arthur/rssreader.py
 ```
-or as script provided by pip
+
+## building example
+```bash
+git clone https://github.com/geexmmo/Python-Foundation-Program-Q2-GUKKA-final-task.git
+cd Python-Foundation-Program-Q2-GUKKA-final-task/packaging/
+# build
+python3 -m pip install --upgrade build
+python3 -m build
+# upload
+python3 -m pip install --upgrade twine
+python3 -m twine upload --repository testpypi dist/*
 ```
-rss-reader -v
-#RSS reader version: 0.1
-```
+
 # Iteration 3:
 Script will cache feed when fetches feed.
 ```bash

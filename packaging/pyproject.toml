@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rssreader-arthur"
-version = "0.1.1"
+version = "0.1.4"
 authors = [
   { name="artur", email="artur-shchipletsov@epam.com" },
 ]
@@ -17,7 +17,8 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = ["requests~=2.28.1"]
+dependencies = ["requests~=2.28.1",
+                "fpdf2~=2.5.6"]
 
 [project.urls]
 "Homepage" = "https://github.com/geexmmo/Python-Foundation-Program-Q2-GUKKA-final-task"
