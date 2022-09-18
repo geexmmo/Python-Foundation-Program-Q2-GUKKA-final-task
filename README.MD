@@ -61,9 +61,14 @@ rss-reader -v
 #RSS reader version: 0.1
 ```
 # Iteration 3:
-Script will cache feed when --date argument in format %Y%m%d is passed
+Script will cache feed when fetches feed.
 ```bash
+# this query will cache result of http://feeds.rssboard.org/rssboard in cachedir with file name of 'httpfeedsrssboardorgrssboard'
+python3 FinalV1.py http://feeds.rssboard.org/rssboard
+# when --date argument in format %Y%m%d is passed - search by date from cache is performed
 python3 FinalV1.py http://feeds.rssboard.org/rssboard --date 2014/04/02
+# --limit also works
+python3 FinalV1.py http://feeds.rssboard.org/rssboard --limit 1
 ```
 
 # Iteration 4:
