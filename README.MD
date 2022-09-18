@@ -35,18 +35,18 @@ clone repo
 python FinalV1-test.py
 ```   
 # Iteration 2
-Without entering virtual environement installaton will be performed to the Python user install directory for your platform.   
+Without entering virtual environment installaton will be performed to the Python user install directory for your platform.   
 Typically ~/.local/, or %APPDATA%\Python on Windows.
 
-Example above performs confined installation in virtual enviroment.   
-Installed package vill be available as long as enviroment is activated (or correct PATH is set)
+Example above performs confined installation in virtual environment.   
+Installed package will be available as long as environment is activated (or correct PATH is set)
 
 ## Installing
 While this project is hosted on test index of pypi - some dependencies can't be resolved by package manager.  
 Dependencies from normal index shoud be installed before the main package from test index to bypass this.   
 ```bash
 cd /tmp
-#ensure clean and isolated python environemnt, you dont want THIS in your system
+#ensure clean and isolated python environment, you dont want THIS in your system
 python3 -m venv rssreadertest
 cd rssreadertest
 source bin/activate
